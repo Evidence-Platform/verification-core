@@ -1,0 +1,42 @@
+# Local development stack. Production runs on Infomaniak (see docs/adr/0006).
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: vcore
+      POSTGRES_PASSWORD: vcore  # development only
+      POSTGRES_DB: vcore
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vcore"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      VCORE_DATABASE_URL: postgresql+psycopg://vcore:vcore@db:5432/vcore
+      VCORE_STORAGE_PATH: /data/objects
+      VCORE_SIGNING_KEY_PATH: /run/secrets/signing_key
+      VCORE_SIGNER_NAME: local-dev
+    command: sh -c "vcore init-db && uvicorn --factory verification_core.api:create_app --host 0.0.0.0 --port 8000"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - objects:/data/objects
+    secrets:
+      - signing_key
+
+secrets:
+  signing_key:
+    file: ./dev-signing-key.pem  # create with: vcore keygen --out dev-signing-key.pem
+
+volumes:
+  pgdata:
+  objects:

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Evidence-Platform/verification-core/blob/main/schemas/source-manifest.v1.schema.json",
+  "title": "Source manifest v1",
+  "description": "Signed statement about one immutable source version. Hash and signature are computed over the RFC 8785 canonical serialisation of this document.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "manifest_type", "project", "publisher", "source", "source_version", "original", "derived", "importer"],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "uuid": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$" },
+    "nullableString": { "type": ["string", "null"] }
+  },
+  "properties": {
+    "schema": { "const": "https://github.com/Evidence-Platform/verification-core/blob/main/schemas/source-manifest.v1.schema.json" },
+    "manifest_type": { "const": "source_version" },
+    "project": { "type": "string" },
+    "publisher": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "canonical_domain"],
+      "properties": {
+        "name": { "type": "string" },
+        "canonical_domain": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "source_type", "canonical_url", "language", "external_identifier"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "title": { "type": "string" },
+        "source_type": { "type": "string" },
+        "canonical_url": { "type": "string" },
+        "language": { "$ref": "#/$defs/nullableString" },
+        "external_identifier": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+    "source_version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version_label", "previous_version_id", "retrieval_method", "retrieved_at", "source_url", "final_url", "tls_host", "http_status", "etag", "last_modified"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "version_label": { "type": "string" },
+        "previous_version_id": { "type": ["string", "null"] },
+        "retrieval_method": { "enum": ["HTTP_FETCH", "MANUAL_UPLOAD"] },
+        "retrieved_at": { "$ref": "#/$defs/timestamp" },
+        "source_url": { "type": "string" },
+        "final_url": { "$ref": "#/$defs/nullableString" },
+        "tls_host": { "$ref": "#/$defs/nullableString" },
+        "http_status": { "type": ["integer", "null"] },
+        "etag": { "$ref": "#/$defs/nullableString" },
+        "last_modified": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+    "original": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_id", "media_type", "byte_size", "sha256"],
+      "properties": {
+        "artifact_id": { "$ref": "#/$defs/uuid" },
+        "media_type": { "type": "string" },
+        "byte_size": { "type": "integer", "minimum": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "derived": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifact_id", "artifact_type", "media_type", "byte_size", "sha256", "transformation"],
+        "properties": {
+          "artifact_id": { "$ref": "#/$defs/uuid" },
+          "artifact_type": { "type": "string" },
+          "media_type": { "type": "string" },
+          "byte_size": { "type": "integer", "minimum": 0 },
+          "sha256": { "$ref": "#/$defs/sha256" },
+          "transformation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "type", "software", "software_version", "code_commit", "configuration_sha256"],
+            "properties": {
+              "id": { "$ref": "#/$defs/uuid" },
+              "type": { "type": "string" },
+              "software": { "type": "string" },
+              "software_version": { "type": "string" },
+              "code_commit": { "type": "string" },
+              "configuration_sha256": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        }
+      }
+    },
+    "importer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "code_commit"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "code_commit": { "type": "string" }
+      }
+    }
+  }
+}

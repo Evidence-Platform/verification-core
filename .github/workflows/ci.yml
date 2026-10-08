@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install ruff
+      - run: ruff check .
+      - run: ruff format --check .
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.12", "3.13"]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: vcore
+          POSTGRES_PASSWORD: vcore
+          POSTGRES_DB: vcore_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U vcore"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev,postgres]"
+      - name: Tests (SQLite)
+        run: pytest
+      - name: Tests (PostgreSQL)
+        run: pytest
+        env:
+          VCORE_TEST_DATABASE_URL: postgresql+psycopg://vcore:vcore@localhost:5432/vcore_test
+      - name: Migration from scratch
+        run: vcore init-db
+        env:
+          VCORE_DATABASE_URL: postgresql+psycopg://vcore:vcore@localhost:5432/vcore_test
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: python
+      - uses: github/codeql-action/analyze@v3
