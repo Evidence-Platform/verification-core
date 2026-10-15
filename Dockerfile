@@ -1,10 +1,10 @@
-FROM python:3.13-slim AS build
+FROM python:3.14-slim AS build
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE NOTICE ./
 COPY src ./src
 RUN pip wheel --no-cache-dir --wheel-dir /wheels ".[postgres]"
 
-FROM python:3.13-slim
+FROM python:3.14-slim
 ARG CODE_COMMIT=unknown
 ENV VCORE_CODE_COMMIT=${CODE_COMMIT} \
     PYTHONDONTWRITEBYTECODE=1 \
